@@ -1,0 +1,248 @@
+# Hello, world!
+#
+# This is an example function named 'hello'
+# which prints 'Hello, world!'.
+#
+# You can learn more about package authoring with RStudio at:
+#
+#   http://r-pkgs.had.co.nz/
+#
+# Some useful keyboard shortcuts for package authoring:
+#
+#   Build and Reload Package:  'Cmd + Shift + B'
+#   Check Package:             'Cmd + Shift + E'
+#   Test Package:              'Cmd + Shift + T'
+#install.packages("tidyr")
+library(dplyr)
+library(tidyr)
+library(plyr)
+library(psych)
+library(ggplot2)
+library(reshape2)
+library(igraph)
+#Read Data from csv
+train <- read.csv("/Users/Nishachandrani/Downloads/Train.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE)
+test <- read.csv("/Users/Nishachandrani/Downloads/Test.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE)
+#combine data from train and test set into one
+MartSalesData <- rbind.fill(train, test)
+
+#colSums(is.na(MartSalesData))
+#str(MartSalesData)
+#count of missing values
+sapply(MartSalesData, function(x) sum(is.na(x) | x == ""))
+
+#count unique values in categorical values
+sapply(MartSalesData, function(x) length(unique(x)))
+#data.class(MartSalesData)
+length(MartSalesData)
+#print frequency of each unique value in Data frame
+names_header <- names(MartSalesData)
+for(i in 1:12){
+  if(is.character(MartSalesData[[i]]))
+    print(count(MartSalesData, names_header[i]))
+}
+
+#imputing missing values
+describe(MartSalesData)
+
+for(i in 1:14204){
+  if(is.na(MartSalesData$Item_Weight[i]))
+    MartSalesData$Item_Weight[i] = 0
+}
+MartSalesData$Item_Weight <- unlist(MartSalesData$Item_Weight)
+avg_weight <- dplyr::summarise(MartSalesData, avg_weight = mean(MartSalesData$Item_Weight))
+avg_weight
+
+MartSalesData$Item_Weight
+describe(MartSalesData)
+
+#imputing missing Item_Weight with avg_weignt
+for(i in 1:14204){
+  if(MartSalesData$Item_Weight[i]==0)
+    MartSalesData$Item_Weight[i] = avg_weight
+}
+MartSalesData$Item_Weight <- unlist(MartSalesData$Item_Weight)
+#check
+sapply(MartSalesData, function(x) sum(is.na(x) | x == ""))
+
+#function to calculate the mode
+mode_fun <- function(x) {
+
+  mode0 <- names(which.max(table(x)))
+
+  if(is.numeric(x)) return(as.numeric(mode0))
+
+  mode0
+
+}
+mode_outlet <- aggregate(Outlet_Size~Outlet_Type,data=MartSalesData,FUN=mode_fun)
+mode_outlet$Outlet_Size[1] = "Small"
+mode_outlet
+#imputing missing Outlet_Size values
+miss_bool <- sapply(MartSalesData$Outlet_Size, function(x) x == "")
+MartSalesData$Outlet_Size[miss_bool]
+MartSalesData$Outlet_Type[miss_bool]
+
+for(i in 1:14204){
+  if(miss_bool[i] == TRUE){
+    MartSalesData$Outlet_Size[i] = mode_outlet$Outlet_Size[mode_outlet$Outlet_Type == MartSalesData$Outlet_Type[i]]
+  }
+
+}
+MartSalesData$Outlet_Type
+MartSalesData$Outlet_Size
+#check
+sapply(MartSalesData, function(x) sum(is.na(x) | x == ""))
+
+#imput the min values(0) of item visibility
+avg_vis <- dplyr::summarise(MartSalesData, avg_visibility = mean(MartSalesData$Item_Visibility))
+avg_vis
+MartSalesData$Item_Visibility
+for(i in 1:14202){
+  if(MartSalesData$Item_Visibility[i] == 0){
+    print("yes")
+    MartSalesData$Item_Visibility[i] = avg_vis
+  }
+
+}
+MartSalesData$Item_Visibility <- unlist(MartSalesData$Item_Visibility)
+MartSalesData$Item_Visibility
+str(MartSalesData$Item_MRP)
+Item_Vis_Mean_Ratio <- c()
+for(i in 1:14204){
+  Item_Vis_Mean_Ratio[i] = MartSalesData$Item_Visibility[i]/avg_vis
+}
+str(Item_Vis_Mean_Ratio)
+#(MartSalesData, Item_Vis_Mean_Ratio)
+MartSalesData$Item_Vis_Mean_Ratio <- Item_Vis_Mean_Ratio
+str(MartSalesData)
+MartSalesData$Item_Vis_Mean_Ratio <- unlist(MartSalesData$Item_Vis_Mean_Ratio)
+
+#Combine Item Types into more broad categories
+length(MartSalesData$Item_Identifier)
+Item_Category <- c()
+#function to add item broad category
+#func_Item_C <- function(x,y){
+#  y  <- substr(x, start=1, stop=2)
+#}
+for(i in 1:14204){
+  x = substr(MartSalesData$Item_Identifier[i], start=1, stop=2)
+  Item_Category[i] = x
+}
+str(Item_Category)
+MartSalesData$Item_Category <- Item_Category
+#mapply(func_Item_C, MartSalesData$Item_Identifier, MartSalesData$Item_Category)
+str(MartSalesData)
+#lapply(MartSalesData$Item_Category, function(x) gsub("FD","Food",x))
+#lapply(MartSalesData$Item_Category, function(x) gsub("NC", "Non-Consumable", x))
+#lapply(MartSalesData$Item_Category, function(x) gsub("DR", "Drinks", x))
+for(i in 1:14204){
+  if(MartSalesData$Item_Category[i] == "FD"){
+    MartSalesData$Item_Category[i] = "Food"
+  }
+  if(MartSalesData$Item_Category[i] == "NC"){
+    MartSalesData$Item_Category[i] = "Non-Consumable"
+  }
+  if(MartSalesData$Item_Category[i] == "DR"){
+    MartSalesData$Item_Category[i] = "Drinks"
+  }
+}
+MartSalesData$Item_Category <- unlist(MartSalesData$Item_Category)
+str(MartSalesData)
+count(MartSalesData$Item_Fat_Content)
+MartSalesData$Item_Fat_Content <- sapply(MartSalesData$Item_Fat_Content, function(x) gsub("LF", "Low Fat", x))
+MartSalesData$Item_Fat_Content <- sapply(MartSalesData$Item_Fat_Content, function(x) gsub("low fat", "Low Fat", x))
+MartSalesData$Item_Fat_Content <- sapply(MartSalesData$Item_Fat_Content, function(x) gsub("reg", "Regular", x))
+
+# MartSalesData$Item_Fat_Content <- sapply(MartSalesData$Item_Category, function(x, y){
+#   z = y
+#   if(x == "Non-Consumable"){
+#     y = "Non-Edible"
+#   }
+#   else{
+#     y = z
+#   }
+# }, y = MartSalesData$Item_Fat_Content)
+for(i in 1:14204){
+  if(MartSalesData$Item_Category[i] == "Non-Consumable"){
+    MartSalesData$Item_Fat_Content[i] = "Non-Edible"
+  }
+}
+str(MartSalesData$Item_Category)
+str(MartSalesData$Item_Fat_Content)
+
+MartSalesData$Outlet_Establishment_Year <- sapply(MartSalesData$Outlet_Establishment_Year, function(x) x = 2017 - x)
+MartSalesData$Outlet_Establishment_Year
+describe(MartSalesData$Outlet_Establishment_Year)
+#drop the columns which have been converted into some other type
+#str(MartSalesData)
+#MartSalesData$Item_Visibility = NULL
+#MartSalesData$Item_Type = NULL
+#str(MartSalesData)
+
+#Exporting data back to train and test
+train <- MartSalesData[1:8523,]
+str(train)
+tail(train)
+test <- MartSalesData[8524:14204,]
+str(test)
+tail(test)
+Train_target <- train$Item_Outlet_Sales
+Train_target
+#Exporting Train and Test data to csv
+write.csv(train, "FTrain.csv")
+write.csv(test, "FTest.csv")
+str(test)
+#Modelling
+linear <- lm(Item_Outlet_Sales ~ . , data = train)
+linear$rank
+linear$coefficients
+#predict output
+summary(linear)
+undebug(predict)
+predicted <- predict(linear, test)
+summary(predicted)
+predicted
+
+#Output file
+Submission <- test[c(1,5)]
+Submission$Item_Outlet_Sales <- predicted
+str(Submission)
+Submission
+
+#Export submission file
+write.csv(Submission, "Submission.csv")
+
+#Plotting
+#Univariate Analysis
+theme_set(theme_linedraw())
+#Item_Weight
+# ggplot(train, aes(x = Item_Weight)) + geom_histogram(bins = 1, binwidth = 1, col = "white", fill = "sky blue") + labs(title = "Item Weights", col = "red", alpha = .5) + gvlin
+# ggplot(train, aes(y = Item_Weight, x =1  )) + geom_boxplot(colour = "Blue", fill = "sky blue", outlier.colour = "Red", outlier.fill = "blue") + ggtitle("Item Weights")
+# #Item_MRP
+# ggplot(train, aes(x = Item_MRP)) + geom_histogram(bins = 10, binwidth = 20, col = "white", fill = "sky blue") + labs(title = "Item MRP", col = "red", alpha = .5)
+# ggplot(train, aes(y = Item_MRP, x =1  )) + geom_boxplot(colour = "Blue", fill = "sky blue", outlier.colour = "Red", outlier.fill = "blue") + ggtitle("Item MRP")
+# #Item_Visibility
+# ggplot(train, aes(x = Item_Vis_Mean_Ratio)) + geom_histogram(bins = 3, binwidth = 2, col = "white", fill = "sky blue") + labs(title = "Item Visibility", col = "red", alpha = .5)
+# ggplot(train, aes(y = Item_Vis_Mean_Ratio, x =1  )) + geom_boxplot(colour = "Blue", fill = "sky blue", outlier.colour = "Red", outlier.fill = "blue") + ggtitle("Item Visibility")
+describe(train$Item_Outlet_Sales)
+train$Item_Outlet_Sales
+sp <- train %>% select(Outlet_Identifier, Item_Outlet_Sales)
+#histogram Sales across various Outlets
+ggplot(sp, aes(x = Item_Outlet_Sales, fill = Outlet_Identifier)) + geom_histogram(binwidth = 500, bins = 27, col = "white") + geom_density(size = 1, colour = "sky blue"  )+scale_x_continuous(limits = c(30,13500), breaks = seq(0,13500,1000))  + theme(axis.text.x = element_text(angle = 90)) + geom_vline(xintercept = mean(sp$Item_Outlet_Sales), colour = "red") + geom_vline(xintercept =  min(sp$Item_Outlet_Sales), colour = "blue") + geom_vline(xintercept =  max(sp$Item_Outlet_Sales), colour = "green") + facet_grid(Outlet_Identifier ~ .) + labs(title = "Sales across various stores", col = "Blue")
+
+#stacked bar graph for sales of Item Categories(Item Types)
+IC_IT_Sales <- train %>%  select(Item_Type, Item_Category, Item_Outlet_Sales)
+ggplot(IC_IT_Sales, aes(x = Item_Category, y = Item_Outlet_Sales, fill = Item_Type)) + geom_bar(stat = "identity") + labs(title = "Item Category vs Sales", col = "Red")
+
+#Intensity plot for Fat Content vs Item Sales
+Fat_Sales <- train %>% select(Item_Fat_Content, Item_Outlet_Sales)
+ggplot(Fat_Sales, aes(x = Item_Fat_Content, y = Item_Outlet_Sales)) + geom_bar(stat = "identity", col = "sky blue")+ scale_color_continuous(low = "blue", high = "red")  + labs(title = "Item Fat Content vs Sales", col = "Red")
+
+#Item Visibility vs Sales
+Item_Vis_Sales <- train %>% select(Item_Vis_Mean_Ratio, Item_Outlet_Sales)
+ggplot(Item_Vis_Sales, aes(x = Item_Vis_Mean_Ratio, y = Item_Outlet_Sales, color = Item_Outlet_Sales)) + geom_point() + scale_color_gradient(low = "Sky Blue", high = "Blue") + geom_smooth(method = "lm") + labs(title = "Item Visibility vs Sales")
+
+
+
+
