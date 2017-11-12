@@ -1,4 +1,4 @@
-#This script was run on a server to collect flights information in JSON Format through Google Flight QPX API. Data was collected almost for a month. Another R program is available in the following path : Analytics/Flights Pricing Analysis/DataCollectfromJSON.R for extracting data from JSON files.
+#This script was run on a server to collect flights information in JSON Format through Google Flight QPX API. Data was collected almost for a month. Another R program is available in the following path : Analytics/Flights Pricing Analysis/DataCollectFromJSON.R for extracting data from JSON files.
 #Some points regarding collected Data. 1. Flights data is available only for following airlines : Vistara, Jet Airways, Air India 2. Data is available only for non stop flights 3. Source and Destination airports are only DEL and BOM.
 
 
