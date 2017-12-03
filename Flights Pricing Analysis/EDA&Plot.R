@@ -348,7 +348,7 @@ ggplot(PricesWeek_end, aes(x = Lag, y = `Avg Fare`, colour = Weekdayend)) + geom
 LowerPrices$DepartDateTime <- paste(LowerPrices$`Departure Date`,LowerPrices$`Departure Time`)
 unique(LowerPrices$DepartDateTime)
 
-#Airfare vs Time of day of Search
+#Time of day of Search vs Airfare
 sort(table(LowerPrices$`TimeofDay of Search`))
 PricesTODSrch <- data.frame(aggregate(Flights_DF$Prices, by = list(Flights_DF$TOSvsDODLag,Flights_DF$`TimeofDay of Search`),FUN = mean))
 str(PricesTODSrch)
